@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const multer = require("multer");
 const xlsx = require("xlsx");
 
@@ -43,24 +43,53 @@ router.post("/upload", upload.single("file"), (req, res) => {
     );
 
     // Transform data into nested JSON format
+    const trimValues = (obj) => {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [
+          key,
+          typeof value === "string" ? value.trim() : value,
+        ])
+      );
+    };
+
     const data = mainSheet.map((product) => {
       const { productName, ...productDetails } = product;
 
+      // Trim product details
+      const trimmedProductDetails = trimValues(productDetails);
+      const trimmedProductName = productName.trim();
+
       // Find all entries in firstCateData related to this product
       const firstCateData = firstCateDataSheet
-        .filter((fcd) => fcd.productName === productName)
+        .filter((fcd) => fcd.productName.trim() === trimmedProductName)
         .map((fcd) => {
-          const { frtCatDataLabel, ...fcdDetails } = fcd;
+          const { frtCatDataLabel, productName, ...fcdDetails } = fcd;
+
+          // Trim first category details
+          const trimmedFcdDetails = trimValues(fcdDetails);
+          const trimmedFrtCatDataLabel = frtCatDataLabel.trim();
 
           // Find all entries in secCatData related to this frtCatDataLabel
           const secCatData = secCatDataSheet
-            .filter((scd) => scd.frtCatDataLabel === frtCatDataLabel)
-            .map(({ frtCatDataLabel, ...scdDetails }) => scdDetails);
+            .filter(
+              (scd) => scd.frtCatDataLabel.trim() === trimmedFrtCatDataLabel
+            )
+            .map(({ frtCatDataLabel, ...scdDetails }) =>
+              trimValues(scdDetails)
+            );
 
-          return { frtCatDataLabel, ...fcdDetails, secCatData };
+          return {
+            frtCatDataLabel: trimmedFrtCatDataLabel.split("_")[1],
+            ...trimmedFcdDetails,
+            secCatData,
+          };
         });
 
-      return { ...productDetails, firstCateData };
+      return {
+        ...trimmedProductDetails,
+        productName: trimmedProductName,
+        firstCateData,
+      };
     });
 
     // Return the JSON data
