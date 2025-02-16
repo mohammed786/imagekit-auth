@@ -15,7 +15,7 @@ const imagekit = new ImageKit({
 });
 
 // Serve the index.html file for the root route
-router.get('/auth', (req, res) => {
+router.get("/auth", (req, res) => {
   const result = imagekit.getAuthenticationParameters();
   res.send(result);
 });
@@ -52,48 +52,59 @@ router.post("/upload", upload.single("file"), (req, res) => {
       );
     };
 
-    const data = mainSheet.map((product) => {
-      const { productName, ...productDetails } = product;
+    const mainSheetMap = {};
+    const firstCategoryMap = {};
+    const secondCategoryMap = {};
 
-      // Trim product details
-      const trimmedProductDetails = trimValues(productDetails);
-      const trimmedProductName = productName.trim();
-
-      // Find all entries in firstCateData related to this product
-      const firstCateData = firstCateDataSheet
-        .filter((fcd) => fcd.productName.trim() === trimmedProductName)
-        .map((fcd) => {
-          const { frtCatDataLabel, productName, ...fcdDetails } = fcd;
-
-          // Trim first category details
-          const trimmedFcdDetails = trimValues(fcdDetails);
-          const trimmedFrtCatDataLabel = frtCatDataLabel.trim();
-
-          // Find all entries in secCatData related to this frtCatDataLabel
-          const secCatData = secCatDataSheet
-            .filter(
-              (scd) => scd.frtCatDataLabel.trim() === trimmedFrtCatDataLabel
-            )
-            .map(({ frtCatDataLabel, ...scdDetails }) =>
-              trimValues(scdDetails)
-            );
-
-          return {
-            frtCatDataLabel: trimmedFrtCatDataLabel.split("_")[1],
-            ...trimmedFcdDetails,
-            secCatData,
-          };
-        });
-
-      return {
-        ...trimmedProductDetails,
-        productName: trimmedProductName,
-        firstCateData,
-      };
+    mainSheet.forEach((product) => {
+      mainSheetMap[product.productName] = trimValues(product);
     });
 
-    // Return the JSON data
-    res.json({ data });
+    firstCateDataSheet.forEach((firstCat) => {
+      const { productName, ...firstCatData } = firstCat;
+      if (firstCategoryMap[productName] === undefined) {
+        firstCategoryMap[productName] = [trimValues(firstCatData)];
+      } else {
+        firstCategoryMap[productName].push(trimValues(firstCatData));
+      }
+    });
+    secCatDataSheet.forEach((secCat) => {
+      const { frtCatDataLabel, ...secCatData } = secCat;
+      if (secondCategoryMap[frtCatDataLabel] === undefined) {
+        secondCategoryMap[frtCatDataLabel] = [trimValues(secCatData)];
+      } else {
+        secondCategoryMap[frtCatDataLabel].push(trimValues(secCatData));
+      }
+    });
+
+    const finalProducts = [];
+
+    Object.keys(mainSheetMap).forEach((productName) => {
+      const product = mainSheetMap[productName];
+      const firstCategoryData = firstCategoryMap[productName];
+      const firstCategoryDataMap = {};
+      firstCategoryData.forEach((firstCat) => {
+        firstCategoryDataMap[firstCat.frtCatDataLabel] = firstCat;
+      });
+
+      const firstCategoryDataKeys = Object.keys(firstCategoryDataMap);
+
+      const firstCategoryDataArray = firstCategoryDataKeys.map((key) => {
+        const firstCat = firstCategoryDataMap[key];
+        const secondCategoryData = secondCategoryMap[`${productName}_${firstCat.frtCatDataLabel}`];
+        return {
+          ...firstCat,
+          secCatData: secondCategoryData,
+        };
+      });
+
+      finalProducts.push({
+        ...product,
+        firstCateData: firstCategoryDataArray,
+      });
+    });
+    
+    res.json({ data: finalProducts });
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).json({ error: "Failed to process the file." });
