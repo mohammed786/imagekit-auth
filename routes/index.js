@@ -40,21 +40,34 @@ router.post("/upload", upload.single("file"), (req, res) => {
       "Show/Hide Prices": "showPrice",
       "Brand": "brandName",
       "Category": "categoryId",
-      "Sub Category": "subCategoryId"
+      "Sub Category": "subCategoryId",
+      "Video Url": "videoUrl",
+      "Warranty Information": "warrantyInformation",
+      "Key Features": "keyFeature",
+      "Tags": "tags"
     };
 
     const firstCatKeyMap = {
+      "Product Name": "productName", 
       "Label": "frtCatDataLabel",
+      "Description": "productContent",
+      "Unit": "unit",
       "Order": "order"
     };
+    
 
     const secCatKeyMap = {
+      "Variant Label": "secondCateLabel",
       "Label": "dataLabel",
+      "Product Description": "productDisc",
       "Price": "price",
+      "Technical Specification": "technicalSpecs",
       "Product Code": "productCode",
       "Is Active": "isActive",
+      "Unit": "unit",
       "Order": "order"
     };
+    
 
     const trimValues = (obj) => {
       return Object.fromEntries(
