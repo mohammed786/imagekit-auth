@@ -22,33 +22,52 @@ router.get("/auth", (req, res) => {
 
 router.post("/upload", upload.single("file"), (req, res) => {
   try {
-    // Ensure a file is uploaded
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded." });
     }
 
-    // Read the file buffer directly from memory
     const buffer = req.file.buffer;
-
-    // Parse the Excel file from the buffer
     const workbook = xlsx.read(buffer, { type: "buffer" });
 
-    // Parse each sheet into JSON
     const mainSheet = xlsx.utils.sheet_to_json(workbook.Sheets["Main"]);
-    const firstCateDataSheet = xlsx.utils.sheet_to_json(
-      workbook.Sheets["firstCateData"]
-    );
-    const secCatDataSheet = xlsx.utils.sheet_to_json(
-      workbook.Sheets["secCatData"]
-    );
+    const firstCateDataSheet = xlsx.utils.sheet_to_json(workbook.Sheets["Variants"]);
+    const secCatDataSheet = xlsx.utils.sheet_to_json(workbook.Sheets["SubVariants"]);
 
-    // Transform data into nested JSON format
+    // Key mappings from new headers to old keys
+    const mainSheetKeyMap = {
+      "Enable/Disable": "isActive",
+      "Product Name": "productName",
+      "Show/Hide Prices": "showPrice",
+      "Brand": "brandName",
+      "Category": "categoryId",
+      "Sub Category": "subCategoryId"
+    };
+
+    const firstCatKeyMap = {
+      "Label": "frtCatDataLabel",
+      "Order": "order"
+    };
+
+    const secCatKeyMap = {
+      "Label": "dataLabel",
+      "Price": "price",
+      "Product Code": "productCode",
+      "Is Active": "isActive",
+      "Order": "order"
+    };
+
     const trimValues = (obj) => {
       return Object.fromEntries(
         Object.entries(obj).map(([key, value]) => [
           key,
-          typeof value === "string" ? value.trim() : value,
+          typeof value === "string" ? value.trim() === "Enable" || value.trim() === "Show" || value.trim() : value
         ])
+      );
+    };
+
+    const mapKeys = (obj, keyMap) => {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [keyMap[key] || key, value])
       );
     };
 
@@ -57,23 +76,30 @@ router.post("/upload", upload.single("file"), (req, res) => {
     const secondCategoryMap = {};
 
     mainSheet.forEach((product) => {
-      mainSheetMap[product.productName] = trimValues(product);
+      const trimmedProduct = trimValues(product);
+      console.log("trimmedProduct", trimmedProduct);
+      mainSheetMap[product["Product Name"]] = mapKeys(trimmedProduct, mainSheetKeyMap);
     });
 
     firstCateDataSheet.forEach((firstCat) => {
-      const { productName, ...firstCatData } = firstCat;
+      const { ["Product Name"]: productName, ...firstCatData } = firstCat;
+      const trimmedFirstCat = trimValues(firstCatData);
+      const mappedFirstCat = mapKeys(trimmedFirstCat, firstCatKeyMap);
       if (firstCategoryMap[productName] === undefined) {
-        firstCategoryMap[productName] = [trimValues(firstCatData)];
+        firstCategoryMap[productName] = [mappedFirstCat];
       } else {
-        firstCategoryMap[productName].push(trimValues(firstCatData));
+        firstCategoryMap[productName].push(mappedFirstCat);
       }
     });
+
     secCatDataSheet.forEach((secCat) => {
-      const { frtCatDataLabel, ...secCatData } = secCat;
-      if (secondCategoryMap[frtCatDataLabel] === undefined) {
-        secondCategoryMap[frtCatDataLabel] = [trimValues(secCatData)];
+      const { ["Variant Label"]: Label, ...secCatData } = secCat;
+      const trimmedSecCat = trimValues(secCatData);
+      const mappedSecCat = mapKeys(trimmedSecCat, secCatKeyMap);
+      if (secondCategoryMap[Label] === undefined) {
+        secondCategoryMap[Label] = [mappedSecCat];
       } else {
-        secondCategoryMap[frtCatDataLabel].push(trimValues(secCatData));
+        secondCategoryMap[Label].push(mappedSecCat);
       }
     });
 
@@ -81,17 +107,17 @@ router.post("/upload", upload.single("file"), (req, res) => {
 
     Object.keys(mainSheetMap).forEach((productName) => {
       const product = mainSheetMap[productName];
-      const firstCategoryData = firstCategoryMap[productName];
+      const firstCategoryData = firstCategoryMap[productName] || [];
       const firstCategoryDataMap = {};
       firstCategoryData.forEach((firstCat) => {
-        firstCategoryDataMap[firstCat.frtCatDataLabel] = firstCat;
+        firstCategoryDataMap[firstCat["frtCatDataLabel"]] = firstCat;
       });
 
       const firstCategoryDataKeys = Object.keys(firstCategoryDataMap);
 
       const firstCategoryDataArray = firstCategoryDataKeys.map((key) => {
         const firstCat = firstCategoryDataMap[key];
-        const secondCategoryData = secondCategoryMap[`${productName}_${firstCat.frtCatDataLabel}`];
+        const secondCategoryData = secondCategoryMap[`${productName}_${firstCat["frtCatDataLabel"]}`] || [];
         return {
           ...firstCat,
           secCatData: secondCategoryData,
@@ -103,10 +129,10 @@ router.post("/upload", upload.single("file"), (req, res) => {
         firstCateData: firstCategoryDataArray,
       });
     });
-    
+
     res.json({ data: finalProducts });
   } catch (error) {
-    console.error("Error processing file:", error);
+    console.error("ErrorBridgerowser: Error processing file:", error);
     res.status(500).json({ error: "Failed to process the file." });
   }
 });
