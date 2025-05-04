@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const xlsx = require("xlsx");
-
+require("dotenv").config();
 const router = express.Router();
 
 const ImageKit = require("imagekit");
