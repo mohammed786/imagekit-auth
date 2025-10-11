@@ -3,7 +3,7 @@ const path = require("path");
 const indexRouter = require("./routes/index");
 
 const app = express();
-const PORT = 3000;
+const PORT = 3002;
 
 // allow cross-origin requests
 app.use(function (req, res, next) {

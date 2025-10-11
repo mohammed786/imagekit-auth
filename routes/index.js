@@ -39,8 +39,8 @@ router.post("/upload", upload.single("file"), (req, res) => {
       "Product Name": "productName",
       "Show/Hide Prices": "showPrice",
       "Brand": "brandName",
-      "Category": "categoryId",
-      "Sub Category": "subCategoryId",
+      "Category": "categoryName",
+      "Sub Category": "subCategoryName",
       "Video Url": "videoUrl",
       "Warranty Information": "warrantyInformation",
       "Key Features": "keyFeature",
@@ -90,29 +90,31 @@ router.post("/upload", upload.single("file"), (req, res) => {
 
     mainSheet.forEach((product) => {
       const trimmedProduct = trimValues(product);
-      console.log("trimmedProduct", trimmedProduct);
-      mainSheetMap[product["Product Name"]] = mapKeys(trimmedProduct, mainSheetKeyMap);
+      const productKey = product["Product Name"].toLowerCase()
+      mainSheetMap[productKey] = mapKeys(trimmedProduct, mainSheetKeyMap);
     });
 
     firstCateDataSheet.forEach((firstCat) => {
-      const { ["Product Name"]: productName, ...firstCatData } = firstCat;
-      const trimmedFirstCat = trimValues(firstCatData);
-      const mappedFirstCat = mapKeys(trimmedFirstCat, firstCatKeyMap);
-      if (firstCategoryMap[productName] === undefined) {
-        firstCategoryMap[productName] = [mappedFirstCat];
+      const trimmedFirstCat = trimValues(firstCat);
+      const { ["Product Name"]: productName, ...firstCatData } = trimmedFirstCat;
+      const mappedFirstCat = mapKeys(firstCatData, firstCatKeyMap);
+      const productkey = productName.toLowerCase()
+      if (firstCategoryMap[productkey] === undefined) {
+        firstCategoryMap[productkey] = [mappedFirstCat];
       } else {
-        firstCategoryMap[productName].push(mappedFirstCat);
+        firstCategoryMap[productkey].push(mappedFirstCat);
       }
     });
 
     secCatDataSheet.forEach((secCat) => {
-      const { ["Variant Label"]: Label, ...secCatData } = secCat;
-      const trimmedSecCat = trimValues(secCatData);
-      const mappedSecCat = mapKeys(trimmedSecCat, secCatKeyMap);
-      if (secondCategoryMap[Label] === undefined) {
-        secondCategoryMap[Label] = [mappedSecCat];
+      const trimmedSecCat = trimValues(secCat);
+      const { ["Variant Label"]: Label, ...secCatData } = trimmedSecCat;
+      const mappedSecCat = mapKeys(secCatData, secCatKeyMap);
+      const labelKey = Label.toLowerCase()
+      if (secondCategoryMap[labelKey] === undefined) {
+        secondCategoryMap[labelKey] = [mappedSecCat];
       } else {
-        secondCategoryMap[Label].push(mappedSecCat);
+        secondCategoryMap[labelKey].push(mappedSecCat);
       }
     });
 
@@ -123,14 +125,15 @@ router.post("/upload", upload.single("file"), (req, res) => {
       const firstCategoryData = firstCategoryMap[productName] || [];
       const firstCategoryDataMap = {};
       firstCategoryData.forEach((firstCat) => {
-        firstCategoryDataMap[firstCat["frtCatDataLabel"]] = firstCat;
+        const firstCatkey = firstCat["frtCatDataLabel"].toLowerCase();
+        firstCategoryDataMap[firstCatkey] = firstCat;
       });
 
       const firstCategoryDataKeys = Object.keys(firstCategoryDataMap);
 
       const firstCategoryDataArray = firstCategoryDataKeys.map((key) => {
         const firstCat = firstCategoryDataMap[key];
-        const secondCategoryData = secondCategoryMap[`${productName}_${firstCat["frtCatDataLabel"]}`] || [];
+        const secondCategoryData = secondCategoryMap[`${productName}_${key}`] || [];
         return {
           ...firstCat,
           secCatData: secondCategoryData,
@@ -142,8 +145,8 @@ router.post("/upload", upload.single("file"), (req, res) => {
         firstCateData: firstCategoryDataArray,
       });
     });
-
     res.json({ data: finalProducts });
+
   } catch (error) {
     console.error("ErrorBridgerowser: Error processing file:", error);
     res.status(500).json({ error: "Failed to process the file." });
