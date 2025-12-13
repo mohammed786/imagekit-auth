@@ -10,6 +10,10 @@ const getSheetsClient = async () => {
     if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
       try {
         const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+        // Fix for Railway/Env vars where \n might be escaped
+        if (credentials.private_key) {
+          credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+        }
         authOptions.credentials = credentials;
       } catch (parseError) {
         console.error("Error parsing GOOGLE_SERVICE_ACCOUNT_JSON:", parseError);
