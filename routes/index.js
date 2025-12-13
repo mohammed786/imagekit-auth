@@ -5,6 +5,7 @@ require("dotenv").config();
 const router = express.Router();
 
 const ImageKit = require("imagekit");
+const { getSheetsClient } = require("../config/googleAuth");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -20,52 +21,83 @@ router.get("/auth", (req, res) => {
   res.send(result);
 });
 
-router.post("/upload", upload.single("file"), (req, res) => {
+router.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded." });
+    let mainSheet, firstCateDataSheet, secCatDataSheet;
+
+    if (req.file) {
+      const buffer = req.file.buffer;
+      const workbook = xlsx.read(buffer, { type: "buffer" });
+
+      mainSheet = xlsx.utils.sheet_to_json(workbook.Sheets["Main"]);
+      firstCateDataSheet = xlsx.utils.sheet_to_json(workbook.Sheets["Variants"]);
+      secCatDataSheet = xlsx.utils.sheet_to_json(workbook.Sheets["SubVariants"]);
+    } else if (req.body.sheetId) {
+      const sheets = await getSheetsClient();
+      const sheetId = req.body.sheetId;
+
+      const getSheetData = async (range) => {
+        const response = await sheets.spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: range,
+        });
+        const rows = response.data.values;
+        if (!rows || rows.length === 0) return [];
+        const headers = rows[0];
+        return rows.slice(1).map((row) => {
+          const obj = {};
+          headers.forEach((header, index) => {
+            obj[header] = row[index];
+          });
+          return obj;
+        });
+      };
+
+      mainSheet = await getSheetData("Main");
+      firstCateDataSheet = await getSheetData("Variants");
+      secCatDataSheet = await getSheetData("SubVariants");
+    } else {
+      return res.status(400).json({ error: "No file uploaded or Sheet ID provided." });
     }
-
-    const buffer = req.file.buffer;
-    const workbook = xlsx.read(buffer, { type: "buffer" });
-
-    const mainSheet = xlsx.utils.sheet_to_json(workbook.Sheets["Main"]);
-    const firstCateDataSheet = xlsx.utils.sheet_to_json(workbook.Sheets["Variants"]);
-    const secCatDataSheet = xlsx.utils.sheet_to_json(workbook.Sheets["SubVariants"]);
 
     // Key mappings from new headers to old keys
     const mainSheetKeyMap = {
-      "Enable/Disable": "isActive",
-      "Product Name": "productName",
-      "Show/Hide Prices": "showPrice",
-      "Brand": "brandName",
-      "Category": "categoryName",
-      "Sub Category": "subCategoryName",
-      "Video Url": "videoUrl",
-      "Warranty Information": "warrantyInformation",
-      "Key Features": "keyFeature",
-      "Tags": "tags"
+      "enable/disable": "isActive",
+      "product name": "productName",
+      "show/hide prices": "showPrice",
+      "brand": "brandName",
+      "category": "categoryName",
+      "sub category": "subCategoryName",
+      "video url": "videoUrl",
+      "warranty information": "warrantyInformation",
+      "key features": "keyFeature",
+      "tags": "tags",
+      "images": { key: "images", transform: (value) => (value ? value.split(',').map(item => item.trim()) : []) },
     };
 
+
+
     const firstCatKeyMap = {
-      "Product Name": "productName", 
-      "Label": "frtCatDataLabel",
-      "Description": "productContent",
-      "Unit": "unit",
-      "Order": "order"
+      "product name": "productName", 
+      "label": "frtCatDataLabel",
+      "description": "productContent",
+      "unit": "unit",
+      "order": "order",
+      "images": { key: "firstLevImages", transform: (value) => (value ? value.split(',').map(item => item.trim()) : []) },
     };
     
 
     const secCatKeyMap = {
-      "Variant Label": "secondCateLabel",
-      "Label": "dataLabel",
-      "Product Description": "productDisc",
-      "Price": "price",
-      "Technical Specification": "technicalSpecs",
-      "Product Code": "productCode",
-      "Is Active": "isActive",
-      "Unit": "unit",
-      "Order": "order"
+      "variant label": "secondCateLabel",
+      "label": "dataLabel",
+      "product description": "productDisc",
+      "price": "price",
+      "technical specification": "technicalSpecs",
+      "product code": "productCode",
+      "is active": "isActive",
+      "unit": "unit",
+      "order": "order",
+      "images": { key: "images", transform: (value) => (value ? value.split(',').map(item => item.trim()) : []) },
     };
     
 
@@ -80,7 +112,15 @@ router.post("/upload", upload.single("file"), (req, res) => {
 
     const mapKeys = (obj, keyMap) => {
       return Object.fromEntries(
-        Object.entries(obj).map(([key, value]) => [keyMap[key] || key, value])
+        Object.entries(obj).map(([key, value]) => {
+          const lowerCaseKey = key.toLowerCase();
+          const mapEntry = keyMap[lowerCaseKey];
+          if (mapEntry && typeof mapEntry === 'object' && mapEntry.key) {
+             const newValue = mapEntry.transform ? mapEntry.transform(value) : value;
+             return [mapEntry.key, newValue];
+          }
+          return [mapEntry || key, value];
+        })
       );
     };
 

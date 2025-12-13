@@ -109,3 +109,6 @@ products
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Google Service Account
+service-account.json
