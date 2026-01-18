@@ -6,6 +6,7 @@ const router = express.Router();
 
 const ImageKit = require("imagekit");
 const { getSheetsClient } = require("../config/googleAuth");
+const axios = require("axios");
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -16,9 +17,22 @@ const imagekit = new ImageKit({
 });
 
 // Serve the index.html file for the root route
-router.get("/auth", (req, res) => {
-  const result = imagekit.getAuthenticationParameters();
-  res.send(result);
+router.get("/auth", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing or invalid Authorization header" });
+  }
+  const token = authHeader.split(" ")[1];
+
+  try {
+    await axios.get("https://dev-uymoi6w24fzybtjv.us.auth0.com/userinfo", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const result = imagekit.getAuthenticationParameters();
+    res.send(result);
+  } catch (err) {
+    res.status(401).json({ error: "Invalid or expired token" });
+  }
 });
 
 router.post("/upload", upload.single("file"), async (req, res) => {
