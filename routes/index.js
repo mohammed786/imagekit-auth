@@ -18,15 +18,13 @@ const imagekit = new ImageKit({
 
 // Serve the index.html file for the root route
 router.get("/auth", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const authHeader = req.headers.authtoken;
+  if (!authHeader) {
     return res.status(401).json({ error: "Missing or invalid Authorization header" });
   }
-  const token = authHeader.split(" ")[1];
-
   try {
     await axios.get("https://dev-uymoi6w24fzybtjv.us.auth0.com/userinfo", {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${authHeader}` }
     });
     const result = imagekit.getAuthenticationParameters();
     res.send(result);
