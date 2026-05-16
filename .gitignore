@@ -114,3 +114,24 @@ Thumbs.db
 service-account.json
 
 data
+
+# SQLite Database Files
+database.sqlite
+database.sqlite-wal
+database.sqlite-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Database backups
+*.sqlite.backup
+*.db.backup
+database.backup.tar.gz
+
+.env*
+*.sql
+*.jar
+
+examples
+nginx
+scripts

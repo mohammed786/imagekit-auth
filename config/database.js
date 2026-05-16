@@ -1,62 +1,19 @@
-const { Sequelize } = require('sequelize');
-require("dotenv").config();
+const mongoose = require('mongoose');
+require('dotenv').config();
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASSWORD,
-  {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'mysql',
-    pool: {
-      max: 10,
-      min: 0,
-      acquire: 30000,
-      idle: 10000
-    }
-  }
-);
+const MONGO_URI = process.env.MONGO_DB_CONNECTIONSTRING;
+const DB_NAME = 'inquiry_db';
 
-// Test the connection
-async function testConnection() {
+async function connectMongoDB() {
   try {
-    await sequelize.authenticate();
-    console.log("Successfully connected to the database.");
-  } catch (error) {
-    console.error("Error connecting to the database:", error);
-  }
-}
-
-async function getAllTables() {
-  try {
-    const [results] = await sequelize.query('SHOW TABLES');
-    return results.map(row => Object.values(row)[0]);
-  } catch (error) {
-    console.error("Error getting tables:", error);
-    throw error;
-  }
-}
-
-async function getTableData(tableName) {
-  try {
-    // Use raw: false to get Sequelize model instances
-    const [results] = await sequelize.query(`SELECT * FROM ${tableName}`, {
-      raw: false,
-      nest: true,
-      type: sequelize.QueryTypes.SELECT
+    await mongoose.connect(MONGO_URI, {
+      dbName: DB_NAME
     });
-    
-    // Convert the results to plain JSON objects
-    return JSON.parse(JSON.stringify(results));
+    console.log(`Successfully connected to MongoDB (${DB_NAME}).`);
   } catch (error) {
-    console.error("Error getting table data:", error);
+    console.error('Error connecting to MongoDB:', error);
     throw error;
   }
 }
 
-module.exports = {
-  sequelize,
-  getAllTables,
-  getTableData,
-};
+module.exports = { connectMongoDB };
