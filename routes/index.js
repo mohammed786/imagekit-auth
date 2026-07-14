@@ -49,10 +49,25 @@ router.post("/upload", upload.single("file"), async (req, res) => {
       const sheetId = req.body.sheetId;
 
       const getSheetData = async (range) => {
-        const response = await sheets.spreadsheets.values.get({
-          spreadsheetId: sheetId,
-          range: range,
-        });
+        let response;
+        try {
+          response = await sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: range,
+          });
+        } catch (sheetErr) {
+          const msg = sheetErr?.message || "";
+          if (
+            msg.includes("not supported for this document") ||
+            msg.includes("Office file")
+          ) {
+            throw new Error(
+              "The provided Google Drive file is an Office/Excel file (.xlsx), not a native Google Sheet. " +
+              "Please open it in Google Drive and convert it to Google Sheets format first (File → Save as Google Sheets), then retry with the new sheet's ID."
+            );
+          }
+          throw sheetErr;
+        }
         const rows = response.data.values;
         if (!rows || rows.length === 0) return [];
         const headers = rows[0];

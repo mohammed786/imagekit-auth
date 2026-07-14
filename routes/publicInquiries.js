@@ -50,6 +50,58 @@ router.post('/submit', captchaMiddleware({
 
     const inquiry = await Inquiry.create(inquiryData);
 
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #007bff; border-bottom: 2px solid #eee; padding-bottom: 10px;">New Store Inquiry</h2>
+        <p><strong>Type:</strong> ${inquiryType.toUpperCase()} | <strong>Priority:</strong> ${priority.toUpperCase()}</p>
+        <p><strong>Customer Name:</strong> ${senderName}</p>
+        <p><strong>Customer Email:</strong> ${senderEmail}</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        
+        <div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0;">
+          <p style="margin: 0; font-style: italic;">"${message}"</p>
+        </div>
+
+        ${technicalDetails ? `<p><strong>Technical Details:</strong> ${technicalDetails}</p>` : ''}
+        <p><strong>Product IDs Mentioned:</strong> ${productIds.length > 0 ? productIds.join(', ') : 'None'}</p>
+      </div>
+    `;
+
+    // 3. Prepare the SMTP2GO Payload
+    const emailPayload = {
+      api_key: process.env.SMTP2GO_API_KEY,
+      sender: `AtoZ Hardware Alerts <${process.env.SMTP2GO_SENDER_EMAIL}>`,
+      to: ['enquiry.atozhardware@hotmail.com'],
+      // We inject custom_headers to set the 'Reply-To' to the customer's email
+      custom_headers: [
+        {
+          header: "Reply-To",
+          value: senderEmail
+        }
+      ],
+      subject: `[${priority.toUpperCase()}] New Inquiry: ${subject}`,
+      html_body: emailHtml
+    };
+
+    // 4. Send the HTTP request to the SMTP2GO API (Asynchronous Background Task)
+    axios.post('https://api.smtp2go.com/v3/email/send', emailPayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    })
+    .then((response) => {
+      console.log('Email successfully sent via Axios. Response:', response.data);
+    })
+    .catch((error) => {
+      // Catching SMTP2GO specific API errors or network drops cleanly
+      if (error.response) {
+        console.error('SMTP2GO API Error Details:', error.response.data);
+      } else {
+        console.error('Network Error connecting to SMTP2GO:', error.message);
+      }
+    });
+
     res.status(201).json({
       success: true,
       message: 'Inquiry submitted successfully. We will get back to you soon.',
