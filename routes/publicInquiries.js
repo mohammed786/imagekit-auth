@@ -1,6 +1,7 @@
 const express = require('express');
 const Inquiry = require('../models/Inquiry');
 const { captchaMiddleware } = require('../utils/captchaService');
+const { default: axios } = require('axios');
 const router = express.Router();
 
 /**
