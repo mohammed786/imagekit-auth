@@ -64,10 +64,17 @@ const InquirySchema = new mongoose.Schema(
       enum: ['low', 'medium', 'high'],
       default: 'medium'
     },
-    productIds: {
-      type: [mongoose.Schema.Types.Mixed],
+    products: {
+      type: [
+        {
+          id: { type: mongoose.Schema.Types.Mixed, required: true },
+          productName: { type: String, default: null },
+          productCode: { type: String, default: null },
+          quantity: { type: Number, required: true, min: 1, default: 1 }
+        }
+      ],
       default: [],
-      comment: 'Array of product IDs selected by the user'
+      comment: 'Array of products with id, name, code and quantity selected by the user'
     }
   },
   {
