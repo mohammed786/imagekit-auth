@@ -1,5 +1,4 @@
-# nodejs
-A minimal Node.js web application.
+
 
 ![static-site](public/images/static-site.png)
 
