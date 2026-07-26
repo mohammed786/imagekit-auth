@@ -193,7 +193,7 @@ Reply-To: ${senderEmail}
     // 3. Prepare the SMTP2GO Payload
     const emailPayload = {
       api_key: process.env.SMTP2GO_API_KEY,
-      sender: `AtoZ Hardware Alerts <${process.env.SMTP2GO_SENDER_EMAIL}>`,
+      sender: `AtoZ Hardware Alerts <alerts@atozhardware.in>`,
       to: ['enquiry.atozhardware@hotmail.com'],
       // Reply-To set to the customer's email for one-click replies
       custom_headers: [
