@@ -4,6 +4,7 @@ const indexRouter = require("./routes/index");
 const cors = require("cors");
 const inquiryRouter = require("./routes/inquiries");
 const publicInquiryRouter = require("./routes/publicInquiries");
+const searchRouter = require("./routes/search");
 const { initDatabase } = require("./config/initDatabase");
 
 const app = express();
@@ -30,6 +31,7 @@ app.options('*', cors(corsOptions));
 app.use("/", indexRouter);
 app.use("/api/inquiries", inquiryRouter);
 app.use("/api/public/inquiries", publicInquiryRouter);
+app.use("/api/v1/search", searchRouter);
 
 // Catch-all route for handling 404 errors
 app.use((req, res, next) => {
@@ -44,6 +46,7 @@ const startServer = async () => {
       console.log(`Server running at http://localhost:${PORT}/`);
       console.log(`Authenticated Inquiry API available at http://localhost:${PORT}/api/inquiries`);
       console.log(`Public Inquiry API available at http://localhost:${PORT}/api/public/inquiries`);
+      console.log(`Search API available at http://localhost:${PORT}/api/v1/search`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

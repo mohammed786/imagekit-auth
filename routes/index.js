@@ -6,6 +6,7 @@ const router = express.Router();
 
 const ImageKit = require("imagekit");
 const { getSheetsClient } = require("../config/googleAuth");
+const { verifyAuth0Token } = require('../middleware/authMiddleware');
 const axios = require("axios");
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -17,7 +18,7 @@ const imagekit = new ImageKit({
 });
 
 // Serve the index.html file for the root route
-router.get("/auth", async (req, res) => {
+router.get("/auth", verifyAuth0Token,  async (req, res) => {
   const authHeader = req.headers.authtoken;
   if (!authHeader) {
     return res.status(401).json({ error: "Missing or invalid Authorization header" });
@@ -33,7 +34,7 @@ router.get("/auth", async (req, res) => {
   }
 });
 
-router.post("/upload", upload.single("file"), async (req, res) => {
+router.post("/upload", verifyAuth0Token, upload.single("file"), async (req, res) => {
   try {
     let mainSheet, firstCateDataSheet, secCatDataSheet;
 

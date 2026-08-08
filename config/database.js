@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
 require('dotenv').config();
+
+// Force Node.js to use Google/Cloudflare DNS instead of system resolver
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const MONGO_URI = process.env.MONGO_DB_CONNECTIONSTRING;
 const DB_NAME = 'inquiry_db';
