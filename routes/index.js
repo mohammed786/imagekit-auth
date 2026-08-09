@@ -133,7 +133,7 @@ router.post("/upload", verifyAuth0Token, upload.single("file"), async (req, res)
       return Object.fromEntries(
         Object.entries(obj).map(([key, value]) => [
           key,
-          typeof value === "string" ? value.trim() === "Enable" || value.trim() === "Show" || value.trim() : value
+          typeof value === "string" ? value.trim() : value
         ])
       );
     };
@@ -158,7 +158,7 @@ router.post("/upload", verifyAuth0Token, upload.single("file"), async (req, res)
 
     mainSheet.forEach((product) => {
       const trimmedProduct = trimValues(product);
-      const productKey = product["Product Name"].toLowerCase()
+      const productKey = trimmedProduct["Product Name"].toLowerCase()
       mainSheetMap[productKey] = mapKeys(trimmedProduct, mainSheetKeyMap);
     });
 
