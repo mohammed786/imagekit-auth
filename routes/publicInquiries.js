@@ -18,6 +18,7 @@ router.post('/submit', captchaMiddleware({
     const {
       senderName,
       senderEmail,
+      senderPhone,
       subject,
       message,
       inquiryType = 'general',
@@ -37,6 +38,7 @@ router.post('/submit', captchaMiddleware({
     const inquiryData = {
       senderName,
       senderEmail,
+      senderPhone: senderPhone || null,
       subject,
       message,
       inquiryType,
@@ -120,6 +122,12 @@ router.post('/submit', captchaMiddleware({
                 </td>
               </tr>
               <tr>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #6b7280; font-size: 13px;">Phone</td>
+                <td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px;">
+                  ${senderPhone ? `<a href="tel:${senderPhone}" style="color: #007bff; text-decoration: none;">${senderPhone}</a>` : '—'}
+                </td>
+              </tr>
+              <tr>
                 <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #6b7280; font-size: 13px;">Subject</td>
                 <td style="padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px;">${subject || '—'}</td>
               </tr>
@@ -176,6 +184,7 @@ CUSTOMER DETAILS
 ----------------
 Name:    ${senderName}
 Email:   ${senderEmail}
+Phone:   ${senderPhone || '—'}
 Subject: ${subject || '—'}
 
 MESSAGE
@@ -195,6 +204,7 @@ Reply-To: ${senderEmail}
       api_key: process.env.SMTP2GO_API_KEY,
       sender: `AtoZ Hardware Alerts <alerts@atozhardware.in>`,
       to: ['enquiry.atozhardware@hotmail.com'],
+      // to: ['mohammedmodi@gmail.com'],
       // Reply-To set to the customer's email for one-click replies
       custom_headers: [
         {

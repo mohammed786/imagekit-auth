@@ -14,6 +14,11 @@ const InquirySchema = new mongoose.Schema(
       lowercase: true,
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
     },
+    senderPhone: {
+      type: String,
+      trim: true,
+      default: null
+    },
     subject: {
       type: String,
       default: null
