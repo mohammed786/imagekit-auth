@@ -5,6 +5,7 @@ const cors = require("cors");
 const inquiryRouter = require("./routes/inquiries");
 const publicInquiryRouter = require("./routes/publicInquiries");
 const searchRouter = require("./routes/search");
+const storeInfoRouter = require("./routes/storeInfo");
 const { initDatabase } = require("./config/initDatabase");
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/", indexRouter);
 app.use("/api/inquiries", inquiryRouter);
 app.use("/api/public/inquiries", publicInquiryRouter);
 app.use("/api/v1/search", searchRouter);
+app.use("/api/store-info", storeInfoRouter);
 
 // Catch-all route for handling 404 errors
 app.use((req, res, next) => {
